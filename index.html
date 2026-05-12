@@ -3,37 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Assistant PRO</title>
+    <title>ShareLook AI</title>
+    <!-- مكتبة توليد الـ PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --bg: #0b0e11; --card: #15191c; --primary: #1d9bf0; --text: #fff; --border: #2f3336; --error: #f4212e; }
+        :root { --bg: #0b0e11; --card: #15191c; --primary: #1d9bf0; --text: #fff; --border: #2f3336; --error: #f4212e; --success: #4BB543; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; }
+        .container { width: 100%; max-width: 500px; padding-bottom: 80px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 15px; position: relative; }
-        h3 { color: var(--primary); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        h2, h3 { color: var(--primary); text-align: center; margin-top: 0; }
         input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; box-sizing: border-box; font-size: 16px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        button { flex: 1; padding: 15px; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .row-btns { display: flex; gap: 10px; }
+        button { flex: 1; padding: 15px; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-secondary { background: #333; color: #eee; }
+        .btn-success { background: var(--success); color: #fff; }
         .warning { color: var(--error); background: rgba(244, 33, 46, 0.1); padding: 10px; border-radius: 8px; font-size: 14px; margin: 10px 0; display: none; }
         .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .res-item { background: #000; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
         .note { font-size: 12px; color: #71767b; margin-top: 20px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 10px; }
-        .chat-icon { position: fixed; bottom: 20px; right: 20px; background: var(--primary); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; }
+        
+        /* الأيقونات السفلية */
+        .bottom-tools { position: fixed; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+        .tool-btn { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.4); position: relative; }
+        .ocr-btn { background: #2f3336; filter: grayscale(0.8); }
+
+        /* واجهة الشات */
+        #chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; display: none; flex-direction: column; }
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.4; }
+        .msg.bot { background: var(--card); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .msg.user { background: var(--primary); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-input-area { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        
+        /* تنسيق الـ PDF */
+        #pdf-report { padding: 40px; color: #000; background: #fff; font-family: 'Arial', sans-serif; display: none; }
+        .pdf-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color:var(--primary)">Lab Assistant PRO</h2>
+    <h2>ShareLook AI</h2>
     
+    <!-- Step 1: Setup -->
     <div id="step1" class="card">
-        <h3>إعدادات التخفيف</h3>
-        <input type="number" id="sample_vol" placeholder="حجم العينة (µl)">
+        <h3>إعدادات العينة</h3>
+        <input type="number" id="sample_vol" placeholder="حجم عينة التخفيف (µl)">
         <input type="number" id="diluent_vol" placeholder="حجم المخفف (µl)">
+        <input type="number" id="total_semen_vol" placeholder="الحجم الكلي للعينة (ml)">
         <button class="btn-primary" onclick="initCalc()">ابدأ العد</button>
     </div>
 
+    <!-- Step 2: Counting -->
     <div id="step2" class="card" style="display:none;">
         <h3 id="square_title">المربع 1 / 32</h3>
         <div id="overload_msg" class="warning">⚠️ تنبيه: تزايد في العدد (Overload)! هل تفضل إعادة التخفيف؟</div>
@@ -43,158 +67,168 @@
         
         <div id="morph_section">
             <h4 style="margin: 10px 0 5px 0;">Morphology:</h4>
-            <input type="number" id="abn_total" placeholder="إجمالي المشوهين (خلايا)">
+            <input type="number" id="abn_total" placeholder="إجمالي المشوهين">
             <input type="number" id="h_def" placeholder="عيوب الرأس">
             <input type="number" id="n_def" placeholder="عيوب الرقبة">
             <input type="number" id="t_def" placeholder="عيوب الذيل">
         </div>
 
         <div class="btn-group">
-            <button id="back_btn" class="btn-secondary" onclick="prevSquare()">العودة للخلف</button>
-            <button class="btn-primary" onclick="processSquare()">التالي</button>
+            <div class="row-btns">
+                <button id="back_btn" class="btn-secondary" onclick="prevSquare()">العودة</button>
+                <button class="btn-primary" onclick="processSquare()">التالي</button>
+            </div>
+            <button class="btn-success" onclick="showFinal()">اعرض النتيجة الآن</button>
         </div>
     </div>
 
+    <!-- Step 3: Results -->
     <div id="results" class="card" style="display:none;">
-        <h3>النتائج التحليلية</h3>
-        <div id="res_conc" style="font-size: 1.2em; font-weight: bold; margin-bottom: 15px;"></div>
-        
-        <div class="results-grid">
-            <div class="res-item">الطبيعي: <span id="res_morph" style="color: #4BB543;"></span></div>
-            <div class="res-item">عيوب رأس: <span id="res_h"></span></div>
-            <div class="res-item">عيوب رقبة: <span id="res_n"></span></div>
-            <div class="res-item">عيوب ذيل: <span id="res_t"></span></div>
+        <div id="printable-area">
+            <h3>النتائج التحليلية النهائيـة</h3>
+            <div id="res_conc" style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px;"></div>
+            <div id="res_total_count" style="font-size: 1.1em; color: var(--primary); margin-bottom: 15px;"></div>
+            
+            <div class="results-grid">
+                <div class="res-item">الطبيعي: <span id="res_morph" style="color: var(--success);"></span></div>
+                <div class="res-item">التشوهات: <span id="res_abn_pct" style="color: var(--error);"></span></div>
+                <div class="res-item">عيوب رأس: <span id="res_h"></span></div>
+                <div class="res-item">عيوب رقبة: <span id="res_n"></span></div>
+                <div class="res-item">عيوب ذيل: <span id="res_t"></span></div>
+            </div>
+            <div class="note">بناءً على عد <span id="res_sq_count"></span> مربعاً</div>
         </div>
-        
-        <div class="note">
-            <p><strong>Calculated on:</strong> <span id="res_div"></span> sperms</p>
-            <strong>ملحوظة هامة:</strong> مجموع نسب التشوهات (رأس، رقبة، ذيل) قد يتجاوز 100% لأن الحيوان الواحد قد يحمل أكثر من عيب (المعايير الدولية).
-        </div>
-        <button class="btn-secondary" style="margin-top:15px" onclick="location.reload()">تحليل جديد</button>
+        <button class="btn-primary" style="margin-top:15px" onclick="downloadPDF()">تحميل النتيجة PDF</button>
+        <button class="btn-secondary" style="margin-top:10px" onclick="location.reload()">تحليل جديد</button>
     </div>
 </div>
 
-<div class="chat-icon" onclick="alert('الشات بوت قيد البرمجة حالياً بمكتبات الذكاء الاصطناعي')">💬</div>
+<!-- الأدوات السفلية -->
+<div class="bottom-tools">
+    <div class="tool-btn ocr-btn" onclick="alert('قريباً.. قارئ للروشتات المعقدة بالذكاء الاصطناعي ✨')">📄🔍</div>
+    <div class="tool-btn" onclick="toggleChat()">👨‍🔬💬</div>
+</div>
+
+<!-- واجهة الشات -->
+<div id="chat-window">
+    <div class="chat-header">
+        <span>ShareLook AI Assistant</span>
+        <button onclick="toggleChat()" style="background:none; color:#fff; font-size:24px;">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-msgs">
+        <div class="msg bot">أهلاً بك يا دكتور، أنا مساعدك الذكي. حالياً أنا في مرحلة التطوير، وقريباً سأكون قادراً على الرد على كافة استفساراتك العلمية.</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="اكتب سؤالك هنا...">
+        <button class="btn-primary" style="width:70px;" onclick="sendMessage()">إرسال</button>
+    </div>
+</div>
 
 <script>
     let state = {
-        current: 1, sampleV: 0, diluentV: 0,
-        history: [], // لحفظ البيانات والرجوع للخلف
-        morphDone: false,
-        overloadIgnored: false
+        current: 1, sampleV: 0, diluentV: 0, totalSemenV: 0,
+        history: [], morphDone: false, overloadIgnored: false
     };
 
     function initCalc() {
         state.sampleV = parseFloat(document.getElementById('sample_vol').value) || 0;
         state.diluentV = parseFloat(document.getElementById('diluent_vol').value) || 0;
-        if(state.sampleV <= 0) return alert("برجاء إدخال حجم العينة");
-        
+        state.totalSemenV = parseFloat(document.getElementById('total_semen_vol').value) || 0;
+        if(state.sampleV <= 0 || state.totalSemenV <= 0) return alert("برجاء إدخال حجم العينة والحجم الكلي");
         document.getElementById('step1').style.display = 'none';
         document.getElementById('step2').style.display = 'block';
         updateUI();
     }
 
     function processSquare() {
-        const t = parseInt(document.getElementById('current_total').value) || 0;
-        const abn = parseInt(document.getElementById('abn_total').value) || 0;
-        const h = parseInt(document.getElementById('h_def').value) || 0;
-        const n = parseInt(document.getElementById('n_def').value) || 0;
-        const t_def = parseInt(document.getElementById('t_def').value) || 0;
-
-        // Validation 1: Abnormal vs Total
-        if (!state.morphDone && abn > t) {
-            return alert(`خطأ: عدد المشوهين (${abn}) أكبر من الإجمالي (${t})`);
-        }
-        // Validation 2: Specific defects vs Abnormal Total
-        if (!state.morphDone && (h > abn || n > abn || t_def > abn)) {
-            return alert(`خطأ: عيوب الأجزاء لا يمكن أن تتجاوز إجمالي المشوهين (${abn})`);
-        }
-
-        // Overload Check
-        if (state.current <= 3 && t > 20 && !state.overloadIgnored) {
-            document.getElementById('overload_msg').style.display = 'block';
-            if (confirm("تنبيه تكدس (Overload)! هل تريد إعادة التخفيف؟")) {
-                return location.reload();
-            }
+        saveCurrentState();
+        const data = state.history[state.current - 1];
+        if (!state.morphDone && data.abn > data.t) return alert(`خطأ: المشوهين (${data.abn}) أكبر من الإجمالي (${data.t})`);
+        
+        if (state.current <= 3 && data.t > 20 && !state.overloadIgnored) {
+            if (confirm("تنبيه تكدس (Overload)! هل تريد إعادة التخفيف؟")) return location.reload();
             state.overloadIgnored = true;
         }
 
-        // Save to history
-        state.history[state.current - 1] = { t, abn, h, n, t_def };
+        if (state.current < 32) { state.current++; updateUI(); } 
+        else { showFinal(); }
+    }
 
-        // Check Morphology Stop Condition
-        let totalSoFar = state.history.reduce((sum, item) => sum + (item ? item.t : 0), 0);
-        if (!state.morphDone && totalSoFar >= 100) {
-            if (confirm(`وصلت لعدد ${totalSoFar}. هل تكتفي بهذا لحساب المورفولوجي؟`)) {
-                state.morphDone = true;
-                state.stopMorphAt = state.current;
-            }
-        }
-
-        if (state.current < 32) {
-            state.current++;
-            updateUI();
-        } else {
-            showFinal();
-        }
+    function saveCurrentState() {
+        state.history[state.current - 1] = {
+            t: parseInt(document.getElementById('current_total').value) || 0,
+            abn: parseInt(document.getElementById('abn_total').value) || 0,
+            h: parseInt(document.getElementById('h_def').value) || 0,
+            n: parseInt(document.getElementById('n_def').value) || 0,
+            t_def: parseInt(document.getElementById('t_def').value) || 0
+        };
     }
 
     function prevSquare() {
-        if (state.current > 1) {
-            state.current--;
-            updateUI();
-            // استعادة القيم السابقة في الخانات
-            const prevData = state.history[state.current - 1];
-            document.getElementById('current_total').value = prevData.t;
-            document.getElementById('abn_total').value = prevData.abn;
-            document.getElementById('h_def').value = prevData.h;
-            document.getElementById('n_def').value = prevData.n;
-            document.getElementById('t_def').value = prevData.t_def;
-        }
+        if (state.current > 1) { state.current--; updateUI(); }
     }
 
     function updateUI() {
         document.getElementById('square_title').innerText = `المربع ${state.current} / 32`;
-        document.getElementById('overload_msg').style.display = 'none';
+        const val = state.history[state.current - 1] || {t:"", abn:"", h:"", n:"", t_def:""};
+        document.getElementById('current_total').value = val.t;
+        document.getElementById('abn_total').value = val.abn;
+        document.getElementById('h_def').value = val.h;
+        document.getElementById('n_def').value = val.n;
+        document.getElementById('t_def').value = val.t_def;
         document.getElementById('back_btn').style.visibility = state.current === 1 ? 'hidden' : 'visible';
-        
-        // تفريغ الخانات للمربع الجديد إذا لم تكن مسجلة مسبقاً
-        if (!state.history[state.current - 1]) {
-            document.getElementById('current_total').value = "";
-            document.getElementById('abn_total').value = "";
-            document.getElementById('h_def').value = "";
-            document.getElementById('n_def').value = "";
-            document.getElementById('t_def').value = "";
-        }
-        
-        document.getElementById('morph_section').style.display = state.morphDone ? 'none' : 'block';
     }
 
     function showFinal() {
+        saveCurrentState();
+        const squaresCounted = state.history.length;
+        const totalInSquares = state.history.reduce((s, i) => s + i.t, 0);
+        
+        // المعادلة المرنة: ضرب الإجمالي في (32 / عدد المربعات المنجزة)
+        const factor = 32 / squaresCounted;
         const df = (state.sampleV + state.diluentV) / state.sampleV;
-        const totalAll = state.history.reduce((s, i) => s + i.t, 0);
-        const conc = totalAll * (df * 5000);
+        const conc = (totalInSquares * factor) * (df * 5000);
+        const totalSpermCount = conc * state.totalSemenV;
 
-        // حساب المورفولوجي بناءً على نقطة التوقف
-        const morphData = state.stopMorphAt ? state.history.slice(0, state.stopMorphAt) : state.history;
-        const totalForMorph = morphData.reduce((s, i) => s + i.t, 0);
-        const totalAbnCells = morphData.reduce((s, i) => s + i.abn, 0);
-        const normalMorph = ((totalForMorph - totalAbnCells) / totalForMorph) * 100;
-
-        // نسب العيوب المنفصلة
-        const h_pct = (morphData.reduce((s, i) => s + i.h, 0) / totalForMorph) * 100;
-        const n_pct = (morphData.reduce((s, i) => s + i.n, 0) / totalForMorph) * 100;
-        const t_pct = (morphData.reduce((s, i) => s + i.t_def, 0) / totalForMorph) * 100;
+        // Morphology
+        const abnSum = state.history.reduce((s, i) => s + i.abn, 0);
+        const normalPct = totalInSquares > 0 ? ((totalInSquares - abnSum) / totalInSquares) * 100 : 0;
+        const abnPct = 100 - normalPct;
 
         document.getElementById('step2').style.display = 'none';
         document.getElementById('results').style.display = 'block';
         
-        document.getElementById('res_conc').innerText = `التركيز: ${conc.toLocaleString()} / مل`;
-        document.getElementById('res_morph').innerText = normalMorph.toFixed(2) + "%";
-        document.getElementById('res_h').innerText = h_pct.toFixed(2) + "%";
-        document.getElementById('res_n').innerText = n_pct.toFixed(2) + "%";
-        document.getElementById('res_t').innerText = t_pct.toFixed(2) + "%";
-        document.getElementById('res_div').innerText = totalForMorph;
+        document.getElementById('res_conc').innerText = `Concentration: ${conc.toLocaleString()} /ml`;
+        document.getElementById('res_total_count').innerText = `Total Sperm Count: ${totalSpermCount.toLocaleString()} /ejaculate`;
+        document.getElementById('res_morph').innerText = normalPct.toFixed(1) + "%";
+        document.getElementById('res_abn_pct').innerText = abnPct.toFixed(1) + "%";
+        document.getElementById('res_h').innerText = ((state.history.reduce((s,i)=>s+i.h,0)/totalInSquares)*100).toFixed(1) + "%";
+        document.getElementById('res_n').innerText = ((state.history.reduce((s,i)=>s+i.n,0)/totalInSquares)*100).toFixed(1) + "%";
+        document.getElementById('res_t').innerText = ((state.history.reduce((s,i)=>s+i.t_def,0)/totalInSquares)*100).toFixed(1) + "%";
+        document.getElementById('res_sq_count').innerText = squaresCounted;
+    }
+
+    function toggleChat() {
+        const win = document.getElementById('chat-window');
+        win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        const msgs = document.getElementById('chat-msgs');
+        msgs.innerHTML += `<div class="msg user">${input.value}</div>`;
+        setTimeout(() => {
+            msgs.innerHTML += `<div class="msg bot">أهلاً بك يا دكتور، الشات بوت في مرحلة الإنتاج وسيكون مدعوم بالذكاء الاصطناعي.. قريباً هكون قادر أرد على استفساراتك.</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        }, 1000);
+        input.value = "";
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById('printable-area');
+        const opt = { margin: 1, filename: 'ShareLook_Report.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+        html2pdf().set(opt).from(element).save();
     }
 </script>
 </body>
