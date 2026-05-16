@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShareLook AI</title>
-    <!-- مكتبة توليد الـ PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --bg: #0b0e11; --card: #15191c; --primary: #1d9bf0; --text: #fff; --border: #2f3336; --error: #f4212e; --success: #4BB543; }
@@ -48,7 +47,6 @@
 <div class="container">
     <h2>ShareLook AI</h2>
     
-    <!-- Step 1: Setup -->
     <div id="step1" class="card">
         <h3>إعدادات العينة</h3>
         <input type="number" id="sample_vol" placeholder="حجم عينة التخفيف (µl)">
@@ -57,7 +55,6 @@
         <button class="btn-primary" onclick="initCalc()">ابدأ العد</button>
     </div>
 
-    <!-- Step 2: Counting -->
     <div id="step2" class="card" style="display:none;">
         <h3 id="square_title">المربع 1 / 32</h3>
         <div id="overload_msg" class="warning">⚠️ تنبيه: تزايد في العدد (Overload)! هل تفضل إعادة التخفيف؟</div>
@@ -82,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Step 3: Results -->
     <div id="results" class="card" style="display:none;">
         <div id="printable-area">
             <h3>النتائج التحليلية النهائيـة</h3>
@@ -103,13 +99,11 @@
     </div>
 </div>
 
-<!-- الأدوات السفلية -->
 <div class="bottom-tools">
-    <div class="tool-btn ocr-btn" onclick="alert('قريباً.. قارئ للروشتات المعقدة بالذكاء الاصطناعي ✨')">📄🔍</div>
+    <div class="tool-btn ocr-btn" onclick="alert('قريباً.. قارئ للروشتات المععده بالذكاء الاصطناعي ✨')">📄🔍</div>
     <div class="tool-btn" onclick="toggleChat()">👨‍🔬💬</div>
 </div>
 
-<!-- واجهة الشات -->
 <div id="chat-window">
     <div class="chat-header">
         <span>ShareLook AI Assistant</span>
@@ -213,32 +207,42 @@
         win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    // الكود الحالي - مش بيعمل حاجة
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    if (!input.value.trim()) return;
-    
-    const question = input.value;
-    input.value = "";
-    
-    const msgs = document.getElementById('chat-msgs');
-    msgs.innerHTML += `<div class="msg user">${question}</div>`;
-    msgs.innerHTML += `<div class="msg bot" id="loading-msg">⏳ جاري البحث...</div>`;
-    msgs.scrollTop = msgs.scrollHeight;
+    // الدالة المعدلة والمؤمنة بالكامل لعرض كامل النص والأسطر الجديدة بأمان
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        if (!input.value.trim()) return;
+        
+        const question = input.value;
+        input.value = "";
+        
+        const msgs = document.getElementById('chat-msgs');
+        msgs.innerHTML += `<div class="msg user">${question}</div>`;
+        
+        // إنشاء عنصر جديد ومستقل للـ Bot لكل استجابة لمنع تدمير البنية البرمجية للصفحة
+        const botMessageElement = document.createElement('div');
+        botMessageElement.className = 'msg bot';
+        botMessageElement.innerText = '⏳ جاري كتابة الرد...';
+        msgs.appendChild(botMessageElement);
+        
+        msgs.scrollTop = msgs.scrollHeight;
 
-    try {
-        const response = await fetch("https://sharelook-chatbot.amrmahe321.workers.dev", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question })
-        });
-        const data = await response.json();
-        document.getElementById('loading-msg').outerHTML = `<div class="msg bot">${data.answer}</div>`;
-    } catch (e) {
-        document.getElementById('loading-msg').outerHTML = `<div class="msg bot">❌ حدث خطأ في الاتصال</div>`;
+        try {
+            const response = await fetch("https://sharelook-chatbot.amrmahe321.workers.dev", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question })
+            });
+            
+            const data = await response.json();
+            
+            // حقن النص كاملاً مع تحويل الأسطر الجديدة (\n) إلى سطور مرئية (<br>) في صفحة الشات
+            botMessageElement.innerHTML = data.answer.replace(/\n/g, '<br>');
+            
+        } catch (e) {
+            botMessageElement.innerText = '❌ حدث خطأ في الاتصال';
+        }
+        msgs.scrollTop = msgs.scrollHeight;
     }
-    msgs.scrollTop = msgs.scrollHeight;
-}
 
     function downloadPDF() {
         const element = document.getElementById('printable-area');
