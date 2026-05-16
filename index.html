@@ -213,17 +213,17 @@
         win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    function sendMessage() {
-        const input = document.getElementById('chat-input');
-        if(!input.value) return;
-        const msgs = document.getElementById('chat-msgs');
-        msgs.innerHTML += `<div class="msg user">${input.value}</div>`;
-        setTimeout(() => {
-            msgs.innerHTML += `<div class="msg bot">أهلاً بك يا دكتور، الشات بوت في مرحلة الإنتاج وسيكون مدعوم بالذكاء الاصطناعي.. قريباً هكون قادر أرد على استفساراتك.</div>`;
-            msgs.scrollTop = msgs.scrollHeight;
-        }, 1000);
-        input.value = "";
-    }
+    // الكود الحالي - مش بيعمل حاجة
+function sendMessage() {
+    const input = document.getElementById('chat-input');
+    if(!input.value) return;
+    const msgs = document.getElementById('chat-msgs');
+    msgs.innerHTML += `<div class="msg user">${input.value}</div>`;
+    setTimeout(() => {
+        msgs.innerHTML += `<div class="msg bot">أهلاً بك يا دكتور...</div>`;
+    }, 1000);
+    input.value = "";
+}
 
     function downloadPDF() {
         const element = document.getElementById('printable-area');
