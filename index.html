@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShareLook AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root { --bg: #0b0e11; --card: #15191c; --primary: #1d9bf0; --text: #fff; --border: #2f3336; --error: #f4212e; --success: #4BB543; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -28,10 +29,10 @@
         .tool-btn { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.4); position: relative; transition: 0.2s; }
         .ocr-btn { background: #2f3336; filter: grayscale(0.8); }
 
-        /* الحل البرمجة لضبط أبعاد الصورة وعمل زووم على الكيميائي */
+        /* الحل البرمجي لضبط أبعاد الصورة وعمل زووم على الكيميائي */
         .bot-logo-btn {
             background: #ffffff !important;
-            overflow: hidden; /* لإخفاء كلمة sharelook والمساحات الزائدة */
+            overflow: hidden; 
             border: 2px solid var(--primary);
             padding: 0;
             display: flex;
@@ -39,10 +40,10 @@
             justify-content: center;
         }
         .bot-logo-btn img {
-            width: 140%; /* تكبير الصورة لتملأ الدائرة وتختفي الهوامش البيضاء */
+            width: 140%; 
             height: 140%;
             object-fit: contain;
-            transform: translateY(12px); /* تحريك الصورة لأسفل قليلاً لتركيز الدائرة على وجه وجسد الكيميائي */
+            transform: translateY(12px); 
         }
         .tool-btn:active {
             transform: scale(0.95);
@@ -51,8 +52,34 @@
         /* واجهة الشات */
         #chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; display: none; flex-direction: column; }
         .chat-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.4; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        
+        /* تأثير الإبهار والظهور الانسيابي للفقاعات (Gemini & Grok Style) */
+        .msg { 
+            max-width: 80%; 
+            padding: 12px 16px; 
+            border-radius: 18px; 
+            line-height: 1.6; 
+            word-wrap: break-word;
+            opacity: 0;
+            transform: translateY(15px) scale(0.98);
+            animation: premiumShow 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes premiumShow {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* ضبط هوامش النصوص المترجمة من المارك داون داخل الفقاعات */
+        .msg p { margin: 0 0 8px 0; }
+        .msg p:last-child { margin-bottom: 0; }
+        .msg ul, .msg ol { margin: 5px 0; padding-right: 20px; }
+        .msg strong, .msg b { color: #fff; font-weight: bold; }
+
         .msg.bot { background: var(--card); align-self: flex-start; border-bottom-left-radius: 4px; }
         .msg.user { background: var(--primary); align-self: flex-end; border-bottom-right-radius: 4px; }
         .chat-input-area { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
@@ -96,7 +123,7 @@
 
     <div id="step2" class="card" style="display:none;">
         <h3 id="square_title">المربع 1 / 32</h3>
-        <div id="overload_msg" class="warning">⚠️ تنبيه: تزايد في العدد (Overload)! هل تفضل إعادة التخفيف？</div>
+        <div id="overload_msg" class="warning">⚠️ تنبيه: تزايد في العدد (Overload)! هل تفضل إعادة التخفيف؟</div>
         
         <label>إجمالي الحيوانات المنوية:</label>
         <input type="number" id="current_total">
@@ -256,7 +283,6 @@
         const msgs = document.getElementById('chat-msgs');
         msgs.innerHTML += `<div class="msg user">${question}</div>`;
         
-        // إنشاء حاوية التحميل بداخلها الـ Spinner وأول خطوة تفكير
         const botMessageElement = document.createElement('div');
         botMessageElement.className = 'msg bot loading-container';
         
@@ -274,12 +300,16 @@
         msgs.appendChild(botMessageElement);
         msgs.scrollTop = msgs.scrollHeight;
 
-        // عداد لتبديل خطوات التفكير تلقائياً كل ثانيتين لإعطاء عمق ذكي للواجهة
         const thinkingInterval = setInterval(() => {
             stepIndex++;
             const textElement = document.getElementById("thinking-text");
             if (textElement && stepIndex < thinkingSteps.length) {
-                textElement.innerText = thinkingSteps[stepIndex];
+                // تأثير خروج ودخول ناعم عند تبديل جمل التفكير
+                textElement.style.opacity = 0;
+                setTimeout(() => {
+                    textElement.innerText = thinkingSteps[stepIndex];
+                    textElement.style.opacity = 1;
+                }, 200);
             }
         }, 2000);
 
@@ -292,10 +322,16 @@
             
             const data = await response.json();
             
-            // إيقاف العداد، وإزالة كلاس الـ loading، وإفراغ الـ Spinner لوضع النص النهائي المنسق
             clearInterval(thinkingInterval);
-            botMessageElement.classList.remove('loading-container');
-            botMessageElement.innerHTML = data.answer.replace(/\n/g, '<br>');
+            
+            // إضافة تأثير اختفاء سريع للمؤشر قبل إظهار النص النهائي لضمان الانسيابية
+            botMessageElement.style.opacity = 0;
+            setTimeout(() => {
+                botMessageElement.classList.remove('loading-container');
+                botMessageElement.innerHTML = marked.parse(data.answer);
+                botMessageElement.style.opacity = 1;
+                msgs.scrollTop = msgs.scrollHeight;
+            }, 150);
             
         } catch (e) {
             clearInterval(thinkingInterval);
